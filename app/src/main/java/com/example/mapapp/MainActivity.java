@@ -1,10 +1,18 @@
 package com.example.mapapp;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
+import android.Manifest;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
+import android.content.pm.PackageManager;
 import android.location.Location;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -42,6 +50,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     Marker mCurrLocationMarker;
     Location mLastLocation;
     FusedLocationProviderClient mFusedLocationClient;
+    LocationRequest mLocationRequest;
 
 
     @Override
@@ -124,6 +133,77 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
     }
 
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
+
+        // Add a marker in Sydney and move the camera
+        //LatLng vinhhung = new LatLng(20.9975, 105.8798);
+        //mMap.addMarker(new MarkerOptions().position(vinhhung).title("Marker in Vinh Hung").snippet("my home"));
+        LatLng bachkhoa = new LatLng(21.004801, 105.846108);
+        mMap.addMarker(new MarkerOptions().position(bachkhoa).title("Marker in Bach Khoa"));
+        //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(bachkhoa,14));
+
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(120000); // two minute interval
+        mLocationRequest.setFastestInterval(120000);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.ACCESS_FINE_LOCATION)
+                    == PackageManager.PERMISSION_GRANTED) {
+                //Location Permission already granted
+                mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallBack, Looper.myLooper());
+                mMap.setMyLocationEnabled(true);
+            } else {
+                //Request Location Permission
+                checkLocationPermission();
+            }
+        }
+        else {
+            mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallBack, Looper.myLooper());
+            mMap.setMyLocationEnabled(true);
+        }
+    }
+    public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
+    private void checkLocationPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.ACCESS_FINE_LOCATION)) {
+
+                // Show an explanation to the user *asynchronously* -- don't block
+                // this thread waiting for the user's response! After the user
+                // sees the explanation, try again to request the permission.
+                new AlertDialog.Builder(this)
+                        .setTitle("Location Permission Needed")
+                        .setMessage("This app needs the Location permission, please accept to use location functionality")
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                //Prompt the user once explanation has been shown
+                                ActivityCompat.requestPermissions(MainActivity.this,
+                                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                                        MY_PERMISSIONS_REQUEST_LOCATION );
+                            }
+                        })
+                        .create()
+                        .show();
+
+
+            } else {
+                // No explanation needed, we can request the permission.
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        MY_PERMISSIONS_REQUEST_LOCATION );
+            }
+        }
+    }
+
     LocationCallback mLocationCallBack=new LocationCallback(){
         @Override
         public void onLocationResult(LocationResult locationResult) {
@@ -151,15 +231,4 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         }
     };
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-
-        // Add a marker in Sydney and move the camera
-        LatLng vinhhung = new LatLng(20.9975, 105.8798);
-        mMap.addMarker(new MarkerOptions().position(vinhhung).title("Marker in Vinh Hung").snippet("my home"));
-        LatLng bachkhoa = new LatLng(21.004801, 105.846108);
-        mMap.addMarker(new MarkerOptions().position(bachkhoa).title("Marker in Bach Khoa"));
-        //mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(bachkhoa,14));
-    }
 }
